@@ -136,6 +136,42 @@ static NSString *HPReorderTableViewCellReuseIdentifier = @"HPReorderTableViewCel
     return [_realDataSource tableView:self numberOfRowsInSection:section];
 }
 
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
+    if ([_realDataSource respondsToSelector:@selector(numberOfSectionsInTableView:)])
+    {
+        return [_realDataSource numberOfSectionsInTableView:tableView];
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section
+{
+    if ([_realDataSource respondsToSelector:@selector(tableView:titleForHeaderInSection:)])
+    {
+        return [_realDataSource tableView:tableView titleForHeaderInSection:section];
+    }
+    else
+    {
+        return nil;
+    }
+}
+
+- (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section
+{
+    if ([_realDataSource respondsToSelector:@selector(tableView:titleForFooterInSection:)])
+    {
+        return [_realDataSource tableView:tableView titleForFooterInSection:section];
+    }
+    else
+    {
+        return nil;
+    }
+}
+
 #pragma mark - Data Source Forwarding
 
 - (void)dealloc
@@ -296,7 +332,16 @@ static void HPGestureRecognizerCancel(UIGestureRecognizer *gestureRecognizer)
 - (void)reorderCurrentRowToIndexPath:(NSIndexPath*)toIndexPath
 {
     [self beginUpdates];
-    [self moveRowAtIndexPath:toIndexPath toIndexPath:_reorderCurrentIndexPath]; // Order is important to keep the empty cell behind
+    
+    if (_reorderCurrentIndexPath.section == toIndexPath.section) {
+        // Move rows in current section
+        [self moveRowAtIndexPath:toIndexPath toIndexPath:_reorderCurrentIndexPath]; // Order is important to keep the empty cell behind
+    } else {
+        // Delete & insert rows in different sections
+        [self deleteRowsAtIndexPaths:@[_reorderCurrentIndexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+        [self insertRowsAtIndexPaths:@[toIndexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+    }
+    
     if ([self.dataSource respondsToSelector:@selector(tableView:moveRowAtIndexPath:toIndexPath:)])
     {
         [self.dataSource tableView:self moveRowAtIndexPath:_reorderCurrentIndexPath toIndexPath:toIndexPath];
@@ -410,6 +455,17 @@ static void HPGestureRecognizerCancel(UIGestureRecognizer *gestureRecognizer)
 {
     const CGPoint location  = [gesture locationInView:self];
     NSIndexPath *toIndexPath = [self indexPathForRowAtPoint:location];
+    
+    // Support adding to empty sections
+    if (!toIndexPath) {
+        for(int i=0; i < self.numberOfSections; ++i) {
+            UIView *v = [self headerViewForSection:i];
+            if (CGRectContainsPoint(v.frame, location)) {
+                toIndexPath = [NSIndexPath indexPathForRow:0 inSection:i];
+                break;
+            }
+        }
+    }
     
     if ([self.delegate respondsToSelector:@selector(tableView:targetIndexPathForMoveFromRowAtIndexPath:toProposedIndexPath:)])
     {
