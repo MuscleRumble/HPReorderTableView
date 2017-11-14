@@ -38,6 +38,7 @@
     CADisplayLink *_scrollDisplayLink;
     CGFloat _scrollRate;
     CGFloat _reorderDragViewShadowOpacity;
+    id _feedbackGenerator;
 }
 
 @dynamic delegate;
@@ -239,6 +240,33 @@ static void HPGestureRecognizerCancel(UIGestureRecognizer *gestureRecognizer)
     gestureRecognizer.enabled = YES;
 }
 
+#pragma mark - Haptic Feedback
+
+- (void)setupHapticFeedback {
+    if (!@available(iOS 10.0, *)) {
+        return;
+    }
+    UISelectionFeedbackGenerator *feedbackGenerator = [[UISelectionFeedbackGenerator alloc] init];
+    [feedbackGenerator prepare];
+    _feedbackGenerator = feedbackGenerator;
+}
+
+- (void)selectionChangedHapticFeedback {
+    if (!@available(iOS 10.0, *)) {
+        return;
+    }
+    UISelectionFeedbackGenerator *feedbackGenerator = _feedbackGenerator;
+    [feedbackGenerator selectionChanged];
+    [feedbackGenerator prepare];
+}
+
+- (void)finalizeHapticFeedback {
+    if (!@available(iOS 10.0, *)) {
+        return;
+    }
+    _feedbackGenerator = nil;
+}
+
 #pragma mark - Private
 
 - (void)animateShadowOpacityFromValue:(CGFloat)fromValue toValue:(CGFloat)toValue
@@ -254,6 +282,9 @@ static void HPGestureRecognizerCancel(UIGestureRecognizer *gestureRecognizer)
 
 - (void)didBeginLongPressGestureRecognizer:(UILongPressGestureRecognizer*)gestureRecognizer
 {
+    [self setupHapticFeedback];
+    [self selectionChangedHapticFeedback];
+    
     const CGPoint location = [gestureRecognizer locationInView:self];
     NSIndexPath *indexPath = [self indexPathForRowAtPoint:location];
     if (indexPath == nil || ![self canMoveRowAtIndexPath:indexPath])
@@ -321,6 +352,8 @@ static void HPGestureRecognizerCancel(UIGestureRecognizer *gestureRecognizer)
                          if ([self.delegate respondsToSelector:@selector(tableView: didEndReorderingRowAtIndexPath:)]) {
                            [self.delegate tableView:self didEndReorderingRowAtIndexPath:indexPath];
                          }
+                         [self selectionChangedHapticFeedback];
+                         [self finalizeHapticFeedback];
                      }];
 }
 
@@ -496,6 +529,7 @@ static void HPGestureRecognizerCancel(UIGestureRecognizer *gestureRecognizer)
     if (toCellLocation.y <= toHeight - originalHeight) return;
     
     [self reorderCurrentRowToIndexPath:toIndexPath];
+    [self selectionChangedHapticFeedback];
 }
 
 @end
