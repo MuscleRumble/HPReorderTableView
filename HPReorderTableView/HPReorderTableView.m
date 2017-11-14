@@ -243,28 +243,25 @@ static void HPGestureRecognizerCancel(UIGestureRecognizer *gestureRecognizer)
 #pragma mark - Haptic Feedback
 
 - (void)setupHapticFeedback {
-    if (!@available(iOS 10.0, *)) {
-        return;
+    if (@available(iOS 10.0, *)) {
+        UISelectionFeedbackGenerator *feedbackGenerator = [[UISelectionFeedbackGenerator alloc] init];
+        [feedbackGenerator prepare];
+        _feedbackGenerator = feedbackGenerator;
     }
-    UISelectionFeedbackGenerator *feedbackGenerator = [[UISelectionFeedbackGenerator alloc] init];
-    [feedbackGenerator prepare];
-    _feedbackGenerator = feedbackGenerator;
 }
 
 - (void)selectionChangedHapticFeedback {
-    if (!@available(iOS 10.0, *)) {
-        return;
+    if (@available(iOS 10.0, *)) {
+        UISelectionFeedbackGenerator *feedbackGenerator = _feedbackGenerator;
+        [feedbackGenerator selectionChanged];
+        [feedbackGenerator prepare];
     }
-    UISelectionFeedbackGenerator *feedbackGenerator = _feedbackGenerator;
-    [feedbackGenerator selectionChanged];
-    [feedbackGenerator prepare];
 }
 
 - (void)finalizeHapticFeedback {
-    if (!@available(iOS 10.0, *)) {
-        return;
+    if (@available(iOS 10.0, *)) {
+        _feedbackGenerator = nil;
     }
-    _feedbackGenerator = nil;
 }
 
 #pragma mark - Private
