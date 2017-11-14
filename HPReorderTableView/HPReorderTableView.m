@@ -392,17 +392,24 @@ static void HPGestureRecognizerCancel(UIGestureRecognizer *gestureRecognizer)
     {
         _reorderDragView.center = CGPointMake(self.center.x, location.y);
     }
-    
+	
+    UIEdgeInsets inset;
+    if (@available(iOS 11.0, *)) {
+        inset = self.adjustedContentInset;
+    } else {
+        inset = self.contentInset;
+    }
+	
     CGRect rect = self.bounds;
     // adjust rect for content inset as we will use it below for calculating scroll zones
-    rect.size.height -= self.contentInset.top;
+    rect.size.height -= inset.top;
     
     [self updateCurrentLocation:gestureRecognizer];
     
     // tell us if we should scroll and which direction
     CGFloat scrollZoneHeight = rect.size.height / 6;
-    CGFloat bottomScrollBeginning = self.contentOffset.y + self.contentInset.top + rect.size.height - scrollZoneHeight;
-    CGFloat topScrollBeginning = self.contentOffset.y + self.contentInset.top  + scrollZoneHeight;
+    CGFloat bottomScrollBeginning = self.contentOffset.y + inset.top + rect.size.height - scrollZoneHeight;
+    CGFloat topScrollBeginning = self.contentOffset.y + inset.top  + scrollZoneHeight;
     
     // we're in the bottom zone
     if (location.y >= bottomScrollBeginning)
@@ -427,18 +434,25 @@ static void HPGestureRecognizerCancel(UIGestureRecognizer *gestureRecognizer)
     
     CGPoint currentOffset = self.contentOffset;
     CGPoint newOffset = CGPointMake(currentOffset.x, currentOffset.y + _scrollRate * 10);
-    
-    if (newOffset.y < -self.contentInset.top)
-    {
-        newOffset.y = -self.contentInset.top;
+	
+    UIEdgeInsets inset;
+    if (@available(iOS 11.0, *)) {
+        inset = self.adjustedContentInset;
+    } else {
+        inset = self.contentInset;
     }
-    else if (self.contentSize.height + self.contentInset.bottom < self.frame.size.height)
+	
+    if (newOffset.y < -inset.top)
+    {
+        newOffset.y = -inset.top;
+    }
+    else if (self.contentSize.height + inset.bottom < self.frame.size.height)
     {
         newOffset = currentOffset;
     }
-    else if (newOffset.y > (self.contentSize.height + self.contentInset.bottom) - self.frame.size.height)
+    else if (newOffset.y > (self.contentSize.height + inset.bottom) - self.frame.size.height)
     {
-        newOffset.y = (self.contentSize.height + self.contentInset.bottom) - self.frame.size.height;
+        newOffset.y = (self.contentSize.height + inset.bottom) - self.frame.size.height;
     }
     
     [self setContentOffset:newOffset];
